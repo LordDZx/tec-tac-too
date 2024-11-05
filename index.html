@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe AI Game</title>
+  <style>
+    body {
+      background-color: #003C25;
+      color: #F7F8F7;
+      font-family: 'Righteous', cursive;
+    }
+    .board {
+      margin: 0 auto;
+      box-shadow: 1px 1px 1px 1px #000503;
+      background-color: #F7F8F7;
+      color: #003C25;
+    }
+    .btn {
+      color: #003C25;
+    }
+    .empty:hover {
+      background-color: #71AA94;
+    }
+    td {
+      border: 2px solid #000503;
+      width: 50px;
+      height: 50px;
+      margin: 0 auto;
+      font-size: 20px;
+    }
+    .board-area {
+      display: none;
+    }
+    .message-area {
+      margin: 0 auto;
+      text-align: center;
+      display: none;
+    }
+    .selection-area {
+      text-align: center;
+    }
+    .main {
+      bottom: 0;
+      height: 200px;
+      left: 0;
+      margin: auto;
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container main">
+    <div class="board-area">
+      <table class="board">
+        <tr>
+          <td class="space text-center empty" id="space-0"></td>
+          <td class="space text-center empty" id="space-1"></td>
+          <td class="space text-center empty" id="space-2"></td>
+        </tr>
+        <tr>
+          <td class="space text-center empty" id="space-3"></td>
+          <td class="space text-center empty" id="space-4"></td>
+          <td class="space text-center empty" id="space-5"></td>
+        </tr>
+        <tr>
+          <td class="space text-center empty" id="space-6"></td>
+          <td class="space text-center empty" id="space-7"></td>
+          <td class="space text-center empty" id="space-8"></td>
+        </tr>
+      </table>
+    </div>
+    <div class="selection-area hide-me">
+      <h3>Play As:</h3>
+      <button class="btn" id="X">X</button>
+      <button class="btn" id="O">O</button>
+    </div>
+    <div class="message-area hide-me">
+      <h3 class="message">You Lose.</h3>
+      <button class="btn" id="replay">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript Code
+    let State = function(old, move){
+      this.turn = "";
+      this.depth = 0;
+      this.board = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      this.result = "active";
+      if(old){
+        for(let i = 0; i <= 8; i++) this.board[i] = old.board[i];
+        this.depth = old.depth;
+        this.result = old.result;
+        this.turn = old.turn;
+      }
+      if(move){
+        this.turn = move.turn;
+        this.board[move.position] = move.turn;
+        if(move.turn === "O") this.depth++;
+        this.turn = move.turn == "X" ? "O" : "X";
+      }
+      this.emptyCells = function() {
+        let indexes = [];
+        for(let i = 0; i < 9; i++) if(this.board[i] === 0) indexes.push(i);
+        return indexes;
+      }
+      this.gameOver = function(){
+        for(let i = 0; i <= 6; i+=3)
+          if(this.board[i] !== 0 && this.board[i] === this.board[i+1] && this.board[i+1] === this.board[i+2]){
+            this.result = this.board[i];
+            return true;
+          }
+        for(let i = 0; i <= 2; i++)
+          if(this.board[i] !== 0 && this.board[i] === this.board[i+3] && this.board[i+3] === this.board[i+6]){
+            this.result = this.board[i];
+            return true;
+          }
+        if(this.board[4] !== 0 && (((this.board[0] === this.board[4]) && (this.board[4] === this.board[8])) || 
+                                   ((this.board[2] === this.board[4]) && (this.board[4] === this.board[6])))){
+          this.result = this.board[4];
+          return true;
+        }
+        let available = this.emptyCells();
+        if(available[0] == undefined){
+          this.result = "draw";
+          return true;
+        } else return false;
+      };  
+    }
+
+    let AI = function(){
+      let game = {};
+      let nextMove;
+      this.AISymbol = "";
+      let _this = this;
+      function minimax(state) {
+        if(state.gameOver()) return Game.score(state);
+        else {
+          var scores = [];
+          var moves = state.emptyCells();
+          for(let i = 0; i < moves.length; i++){
+            let possibleState = new State(state, {turn: state.turn, position: moves[i]});
+            let currScore = minimax(possibleState)
+            scores.push(currScore);
+          }
+          if(state.turn == "X"){
+            let max = findMaxIndex(scores);
+            nextMove = moves[max];
+            return scores[max];
+          } else {
+            let min = findMinIndex(scores);
+            nextMove = moves[min];
+            return scores[min];
+          }
+        }
+      }
+      this.plays = function(_game){
+        game = _game;
+      };  
+      this.takeMove = function(_state){
+        _state.turn = _this.AISymbol;
+        minimax(_state);
+        let newState = new State(_state, {turn: _this.AISymbol, position: nextMove});
+        myGame.advanceTo(newState);
+      }
+    }
+
+    let Game = function(AI){
+      this.ai = AI;
+      this.currentState = new State();
+      this.currentState.turn = "X";
+      this.status = "start";
+      this.advanceTo = function(_state){
+        this.currentState = _state;   
+      }
+      this.start = function(){
+        if(this.status = "start"){
+          this.advanceTo(this.currentState);
+          this.status = "running";
+        }
+      }
+      this.updateUI = function(){
+        let board = this.currentState.board;
+        for(let i = 0; i <= 8; i++){
+          let selector = "#space-" + i;
+          if(board[i]){
+            document.querySelector(selector).innerHTML = board[i];
+            document.querySelector(selector).classList.remove("empty");
+          } else {
+            document.querySelector(selector).innerHTML = "";
+            document.querySelector(selector).classList.add("empty");
+          }
+        }
+        if(this.currentState.gameOver()){
+          let message = this.currentState.result == "draw" ? "It's a draw." : this.currentState.result != playerSymbol ? "You lose!" : "You win!";
+          document.querySelector(".message").innerHTML = message;
+          document.querySelector(".message-area").style.display = "block";
+        }
+      }
+      this.isValid = function(space){
+        return this.currentState.board[space] == 0;
+      }
+    }
+
+    Game.score = function(_state){
+      if(_state.result !== "active"){
+        if(_state.result === "X") return 10 - _state.depth;
+        else if(_state.result === "O") return -10 + _state.depth;
+        else return 0;
+      }
+    }
+
+    let findMaxIndex = function(arr){
+      let indexOfMax = 0;
+      let max = 0;
+      if(arr.length > 1){
+        for(let i = 0; i < arr.length; i++){
+          if(arr[i] >= max){
+            indexOfMax = i;
+            max = arr[i];
+          }
+        }
+      }
+      return indexOfMax;
+    }
+
+    let findMinIndex = function(arr){
+      let indexOfMin = 0;
+      let min = 0;
+      if(arr.length > 1){
+        for(let i = 0; i < arr.length; i++){
+          if(arr[i] <= min){
+            indexOfMin = i;
+            min = arr[i];
+          }
+        }
+      }
+      return indexOfMin;
+    }
+
+    let myAI;
+    let myGame;
+    let playerSymbol = "";
+    let compSymbol = "";
+    let playerTurn;
+
+    let playGame = function(){
+      myAI = new AI();
+      myGame = new Game(myAI);
+      myAI.plays(myGame);
+      myGame.updateUI();
+      myAI.AISymbol = compSymbol;
+      Game.prototype.playerSymbol = playerSymbol;
+      document.querySelectorAll(".hide-me").forEach(elem => elem.style.display = "none");
+      document.querySelector(".board-area").style.display = "block";
+      playerTurn = playerSymbol == "X" ? true : false;
+    };
+
+    document.querySelector("#replay").addEventListener("click", function() {
+      document.querySelector(".board-area").style.display = "none";
+      document.querySelector(".message-area").style.display = "none";
+      document.querySelector(".selection-area").style.display = "block";
+    });
+
+    document.querySelectorAll(".btn").forEach(btn => {
+      btn.addEventListener("click", function() {
+        if(this.id == "X"){
+          playerSymbol = "X";
+          compSymbol = "O";
+        } else {
+          playerSymbol = "O";
+          compSymbol = "X";
+        }
+        playGame();
+      });
+    });
+
+    document.querySelectorAll(".space").forEach(space => {
+      space.addEventListener("click", function(){
+        let spaceId = parseInt(this.id.split("-")[1]);
+        if(playerTurn && myGame.isValid(spaceId)){
+          let next = new State(myGame.currentState, {turn: playerSymbol, position: spaceId});
+          myGame.advanceTo(next);
+          myGame.updateUI();
+          playerTurn = false;
+          if(myGame.currentState.result === "active") myAI.takeMove(myGame.currentState);
+          myGame.updateUI();
+          playerTurn = true;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
